@@ -1,0 +1,35 @@
+spring:
+  profiles:
+    active: local
+  batch:
+    job:
+      names: ${job.name:NONE} #run only job that i passed by parameter
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:mysql://localhost:3306/house_batch
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 9404JHKim@
+  jpa:
+    show-sql: true
+    generate-ddl: false
+    hibernate:
+      ddl-auto: none
+    database: mysql
+  batch:
+    jdbc:
+      initialize-schema: always
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  jpa:
+    database: h2
