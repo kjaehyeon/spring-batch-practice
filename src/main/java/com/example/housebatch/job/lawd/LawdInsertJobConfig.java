@@ -59,7 +59,9 @@ public class LawdInsertJobConfig {
 
     @StepScope
     @Bean
-    public FlatFileItemReader<Lawd> lawdFileItemReader(@Value("#{jobParameters['filePath']}") String filePath){
+    public FlatFileItemReader<Lawd> lawdFileItemReader(
+            @Value("#{jobParameters['filePath']}") String filePath //커멘드 argument로 넘겨주는 파일 경로를 받기 위함
+    ){
         return new FlatFileItemReaderBuilder<Lawd>()
                 .name("lawdFileItemReader")
                 .delimited()
