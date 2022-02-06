@@ -20,7 +20,7 @@ spring:
     show-sql: true
     generate-ddl: false
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     database: mysql
   batch:
     jdbc:

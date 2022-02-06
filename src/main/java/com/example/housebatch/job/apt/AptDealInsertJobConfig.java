@@ -3,7 +3,6 @@ package com.example.housebatch.job.apt;
 import com.example.housebatch.adapter.ApartmentApiResource;
 import com.example.housebatch.core.dto.AptDealDto;
 import com.example.housebatch.core.repository.LawdRepository;
-import com.example.housebatch.job.validator.LawdCdParameterValidator;
 import com.example.housebatch.job.validator.YearMonthParameterValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +13,6 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.CompositeJobParametersValidator;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
-import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemWriter;
@@ -25,6 +23,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.oxm.jaxb.Jaxb2Marshaller;
+import org.springframework.scheduling.config.Task;
 
 import java.time.YearMonth;
 import java.util.Arrays;
@@ -37,18 +36,22 @@ public class AptDealInsertJobConfig {
     private final JobBuilderFactory jobBuilderFactory;
     private final StepBuilderFactory stepBuilderFactory;
     private final ApartmentApiResource apartmentApiResource;
-    private final LawdRepository lawdRepository;
 
     @Bean
     public Job aptDealInsertJob(
-            Step aptDealInsertStep,
-            Step guLawdCdStep
+//            Step aptDealInsertStep,
+            Step guLawdCdStep,
+            Step printLawdCdStep
     ){
         return jobBuilderFactory.get("aptDealInsertJob")
                 .incrementer(new RunIdIncrementer())
                 .validator(aptDealJobParameterValidator())
                 .start(guLawdCdStep)
-                .next(aptDealInsertStep)
+                //Condtional Flow Step 적용
+                .on("CONTINUABLE").to(printLawdCdStep).next(guLawdCdStep)
+                .from(guLawdCdStep)
+                .on("*").end()
+                .end()
                 .build();
     }
 
@@ -69,17 +72,37 @@ public class AptDealInsertJobConfig {
                 .build();
     }
 
+    /**
+     * Execution Context에 저장할 데이터
+     * 1. guLawdCd -> 다음 스텝에서 활용할 값
+     * 2. guLawdCdList
+     * 3. itemCount -> 남아있는 구 코드의 개수
+     */
     @StepScope
     @Bean
-    public Tasklet guLawdCdTasklet(){
+    public Tasklet guLawdCdTasklet(
+            LawdRepository lawdRepository
+    ){
+        return new GuLawdTasklet(lawdRepository);
+    }
+
+    @JobScope
+    @Bean
+    public Step printLawdCdStep(
+            Tasklet printLawdCdTasklet
+    ){
+        return stepBuilderFactory.get("printLawdCdStep")
+                .tasklet(printLawdCdTasklet)
+                .build();
+    }
+
+    @StepScope
+    @Bean
+    public Tasklet printLawdCdTasklet(
+            @Value("#{jobExecutionContext['guLawdCd']}") String guLawdCd
+    ){
         return (contribution, chunkContext) -> {
-            StepExecution stepExecution = chunkContext.getStepContext().getStepExecution();
-            ExecutionContext executionContext = stepExecution.getJobExecution().getExecutionContext();
-            //step간에 데이터를 전달할거라서 JobExcutionContext를 꺼내온다.
-
-            List<String> guLawdCds = lawdRepository.findDistinctGuLawdCd();
-            executionContext.putString("guLawdCd", guLawdCds.get(0));
-
+            System.out.println("[printLawdCdStep] guLawdCd = " + guLawdCd);
             return RepeatStatus.FINISHED;
         };
     }
