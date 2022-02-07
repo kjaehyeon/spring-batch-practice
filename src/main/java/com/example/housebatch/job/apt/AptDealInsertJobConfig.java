@@ -3,6 +3,7 @@ package com.example.housebatch.job.apt;
 import com.example.housebatch.adapter.ApartmentApiResource;
 import com.example.housebatch.core.dto.AptDealDto;
 import com.example.housebatch.core.repository.LawdRepository;
+import com.example.housebatch.core.service.AptDealService;
 import com.example.housebatch.job.validator.YearMonthParameterValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,16 +40,15 @@ public class AptDealInsertJobConfig {
 
     @Bean
     public Job aptDealInsertJob(
-//            Step aptDealInsertStep,
-            Step guLawdCdStep,
-            Step printLawdCdStep
+            Step aptDealInsertStep,
+            Step guLawdCdStep
     ){
         return jobBuilderFactory.get("aptDealInsertJob")
                 .incrementer(new RunIdIncrementer())
                 .validator(aptDealJobParameterValidator())
                 .start(guLawdCdStep)
                 //Condtional Flow Step 적용
-                .on("CONTINUABLE").to(printLawdCdStep).next(guLawdCdStep)
+                .on("CONTINUABLE").to(aptDealInsertStep).next(guLawdCdStep)
                 .from(guLawdCdStep)
                 .on("*").end()
                 .end()
@@ -84,27 +84,6 @@ public class AptDealInsertJobConfig {
             LawdRepository lawdRepository
     ){
         return new GuLawdTasklet(lawdRepository);
-    }
-
-    @JobScope
-    @Bean
-    public Step printLawdCdStep(
-            Tasklet printLawdCdTasklet
-    ){
-        return stepBuilderFactory.get("printLawdCdStep")
-                .tasklet(printLawdCdTasklet)
-                .build();
-    }
-
-    @StepScope
-    @Bean
-    public Tasklet printLawdCdTasklet(
-            @Value("#{jobExecutionContext['guLawdCd']}") String guLawdCd
-    ){
-        return (contribution, chunkContext) -> {
-            System.out.println("[printLawdCdStep] guLawdCd = " + guLawdCd);
-            return RepeatStatus.FINISHED;
-        };
     }
 
     @JobScope
@@ -146,8 +125,11 @@ public class AptDealInsertJobConfig {
 
     @StepScope
     @Bean
-    public ItemWriter<AptDealDto> aptDealWriter(){
-        return items -> items.forEach(System.out::println);
+    public ItemWriter<AptDealDto> aptDealWriter(AptDealService aptDealService){
+        return items -> {
+            items.forEach(aptDealService::upsert);
+            System.out.println("======= Writing Completed =======");
+        };
     }
 
 }

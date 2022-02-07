@@ -1,6 +1,7 @@
 package com.example.housebatch.core.entity;
 
 import com.example.housebatch.core.dto.AptDealDto;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 @NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "apt_deal")
 @EntityListeners(AuditingEntityListener.class)
 public class AptDeal {
@@ -50,6 +52,8 @@ public class AptDeal {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+
 
     public static AptDeal from(AptDealDto aptDealDto){
         return AptDeal.builder()

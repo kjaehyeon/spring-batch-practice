@@ -32,7 +32,7 @@ public class GuLawdTasklet implements Tasklet {
 
     @Override
     public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-        //step간에 데이터를 전달할거라서 JobExcutionContext를 꺼내온다.
+        //step간에 데이터를 전달할거라서 JobExecutionContext를 꺼내온다.
         ExecutionContext executionContext = getExecutionContext(chunkContext);
 
         initList(executionContext);
