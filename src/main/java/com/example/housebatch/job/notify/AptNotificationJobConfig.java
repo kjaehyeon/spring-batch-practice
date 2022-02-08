@@ -1,8 +1,8 @@
 package com.example.housebatch.job.notify;
 
+import com.example.housebatch.adapter.FakeSendService;
 import com.example.housebatch.core.dto.AptDto;
 import com.example.housebatch.core.dto.NotificationDto;
-import com.example.housebatch.core.entity.Apt;
 import com.example.housebatch.core.entity.AptNotification;
 import com.example.housebatch.core.repository.AptNotificationRepository;
 import com.example.housebatch.core.repository.LawdRepository;
@@ -24,7 +24,6 @@ import org.springframework.batch.item.data.builder.RepositoryItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import java.time.LocalDate;
@@ -110,9 +109,11 @@ public class AptNotificationJobConfig {
 
     @StepScope
     @Bean
-    public ItemWriter<NotificationDto> aptNotificationWriter(){
+    public ItemWriter<NotificationDto> aptNotificationWriter(
+            FakeSendService fakeSendService
+    ){
         return items -> {
-            items.forEach(item -> System.out.println(item.toMessage()));
+            items.forEach(item -> fakeSendService.send(item.getEmail(), item.toMessage()));
         };
     }
 

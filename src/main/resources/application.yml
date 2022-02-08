@@ -22,9 +22,12 @@ spring:
     hibernate:
       ddl-auto: update
     database: mysql
+    properties:
+      hibernate.format-sql: true
   batch:
     jdbc:
       initialize-schema: always
+
 
 external:
   apartment-api:
